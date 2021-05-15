@@ -1,0 +1,7 @@
+.cache
+.idea
+node_modules
+public
+npm-debug.log*
+*.iml
+*.map
