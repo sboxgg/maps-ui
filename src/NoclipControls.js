@@ -145,6 +145,10 @@ const NoclipControls = function (camera, domElement) {
         if (moveRightDist) {
             this.moveRight(moveRightDist);
         }
+
+        const hasChangedPos = moveForwardDist || moveRightDist;
+
+        return hasChangedPos;
     };
 
     const onPointerlockChange = () => {
@@ -165,8 +169,10 @@ const NoclipControls = function (camera, domElement) {
         this.domElement.ownerDocument.addEventListener('mousemove', onMouseMove);
         this.domElement.ownerDocument.addEventListener('pointerlockchange', onPointerlockChange);
         this.domElement.ownerDocument.addEventListener('pointerlockerror', onPointerlockError);
-        this.domElement.ownerDocument.addEventListener('mousedown', this.onMouseDown);
-        this.domElement.ownerDocument.addEventListener('mouseup', this.onMouseUp);
+        // this.domElement.ownerDocument.addEventListener('mousedown', this.onMouseDown);
+        // this.domElement.ownerDocument.addEventListener('mouseup', this.onMouseUp);
+        this.domElement.addEventListener('mousedown', this.onMouseDown);
+        this.domElement.addEventListener('mouseup', this.onMouseUp);
         this.domElement.ownerDocument.addEventListener('keydown', this.onKeyDown);
         this.domElement.ownerDocument.addEventListener('keyup', this.onKeyUp);
     };
@@ -175,8 +181,10 @@ const NoclipControls = function (camera, domElement) {
         this.domElement.ownerDocument.removeEventListener('mousemove', onMouseMove);
         this.domElement.ownerDocument.removeEventListener('pointerlockchange', onPointerlockChange);
         this.domElement.ownerDocument.removeEventListener('pointerlockerror', onPointerlockError);
-        this.domElement.ownerDocument.addEventListener('mousedown', this.onMouseDown);
-        this.domElement.ownerDocument.addEventListener('mouseup', this.onMouseUp);
+        // this.domElement.ownerDocument.addEventListener('mousedown', this.onMouseDown);
+        // this.domElement.ownerDocument.addEventListener('mouseup', this.onMouseUp);
+        this.domElement.addEventListener('mousedown', this.onMouseDown);
+        this.domElement.addEventListener('mouseup', this.onMouseUp);
         this.domElement.ownerDocument.addEventListener('keydown', this.onKeyDown);
         this.domElement.ownerDocument.addEventListener('keyup', this.onKeyUp);
     };

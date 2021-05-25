@@ -96,6 +96,10 @@ header {
     overflow-y: hidden;
     box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.3);
 
+    a {
+        color: #F5F5F5;
+    }
+
     h1, span {
         color: #F5F5F5;
         font-weight: 300;
@@ -118,7 +122,9 @@ header {
         background: #777;
         text-shadow: 0 0 0.25em #000;
     }
+}
 
+#map-details-link {
 }
 
 

@@ -175,8 +175,8 @@ const initCanvas = (locationData) => {
     // const controls = new OrbitControls( camera, renderer.domElement );
     controls.addEventListener('change', render); // use if there is no animation loop
     controls.addEventListener('doneMoving', onControlsDoneMoving); // use if there is no animation loop
-    controls.minDistance = 2;
-    controls.maxDistance = 1000;
+    // controls.minDistance = 2;
+    // controls.maxDistance = 1000;
     // controls.target.set( 0, 0, - 0.2 );
     controls.update();
     // setInterval(controls.update, 100)
@@ -187,19 +187,22 @@ const initCanvas = (locationData) => {
     let prevTime = 0;
 
     function animate(time) {
-        // console.log('animate')
+
+
 
         requestAnimationFrame(animate);
-
         const dt = (time - prevTime) / 1000;
 
+        // const hasChangedPosition = controls.update(dt);
         controls.update(dt);
         // this.stats.update();
         // this.mixer && this.mixer.update(dt);
-        render();
+        // if(hasChangedPosition) {
+            // console.log('animate')
+            render();
+        // }
 
         prevTime = time;
-
     }
 
     function onControlsDoneMoving() {
@@ -238,20 +241,20 @@ const initIntro = ()=>{
 
     // todo: hit API to fetch a random map
     const tryArr = [
-        { orgId: 'facepunch', assetId: 'construct' },
+        'facepunch.construct',
     ];
 
-    const tryObj = tryArr[randomInt(0, tryArr.length - 1)];
-
-    const {orgId, assetId} = tryObj;
+    const tryId = tryArr[randomInt(0, tryArr.length - 1)];
 
     const $a = document.createElement('a');
-    $a.setAttribute('href', `/noclip/${orgId}.${assetId}`);
+    $a.setAttribute('href', `/noclip/${tryId}`);
+
+    const $asset = document.createElement('strong');
+    $asset.append(tryId);
+
     $a.append(
         `${Conf.selfHost}/noclip/`,
-        orgId,
-        '.',
-        assetId,
+        $asset,
     );
 
     $tryItOut.append(
@@ -261,6 +264,20 @@ const initIntro = ()=>{
 };
 
 const initWebTypeNoclip = (locationData)=>{
+    const {
+        orgId,
+        assetId,
+    } = locationData;
+
+    if(orgId && assetId) {
+        const $mapDetailsLink = document.querySelector('#map-details-link');
+        const $a = document.createElement('a');
+        $a.append('Map Details');
+        $a.setAttribute('href', `https://asset-tracker.sbox.gg/assets/${orgId}.${assetId}`);
+        $a.setAttribute('target', '_blank');
+        $mapDetailsLink.append($a);
+    }
+
     initCanvas(locationData);
     render();
 }
