@@ -9,11 +9,7 @@
     <link rel="stylesheet" href="style.scss">
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,400" rel="stylesheet">
     <meta property="og:description" content="s&amp;box map viewer: noclip around the latest content at your browser's fingertips" />
-    <script src="src/app.js"></script>
 </head>
-<script>
-
-</script>
 <body>
 <header>
     <h1><a href="/">maps.sbox.gg</a></h1>
@@ -29,5 +25,15 @@
     <div id="try-it-out"></div>
 </div>
 <ul id="errors" class="hide"></ul>
+<div id="debug"></div>
+<svg id="radar-cursor" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="hide">
+    <linearGradient id="gradient" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="white" stop-opacity="0"/>
+        <stop offset="100%" stop-color="white"/>
+    </linearGradient>
+    <polygon points="0,0 100,0 50,50" fill="url(#gradient)"/>
+    <circle cx="50" cy="50" r="5" fill="#fff" stroke="#3273eb"/>
+</svg>
 </body>
+<script src="src/app.js"></script>
 </html>

@@ -1,3 +1,6 @@
+import * as THREE from "three";
+import {radToDeg, degToRad} from "three/src/math/MathUtils";
+
 const heregex = require('heregex');
 
 const regextract = (regex, str, throw_on_error=true)=>{
@@ -29,7 +32,7 @@ const parseUrl = (url=document.location.pathname)=>{
             (?:
                 @(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)  # optional @x,y,z as floats
                 (?:
-                    ,(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)  # optional ,pitch,yaw,roll as floats
+                    ,(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)  # optional ,pitch,yaw as floats
                 )?
             )?
             ${'i'}
@@ -38,7 +41,7 @@ const parseUrl = (url=document.location.pathname)=>{
             webType,
             orgId, assetId,
             x, y, z,
-            pitch, yaw, roll,
+            pitch, yaw,
         ] = regextract(regex, url);
 
         const out = {
@@ -51,27 +54,25 @@ const parseUrl = (url=document.location.pathname)=>{
             out.y = parseFloat(y);
             out.z = parseFloat(z);
 
-            if(pitch !== undefined && yaw !== undefined && roll !== undefined) {
-                out.pitch = parseFloat(pitch);
-                out.yaw = parseFloat(yaw);
-                out.roll = parseFloat(roll);
+            if(pitch !== undefined && yaw !== undefined) {
+                out.pitch = degToRad(parseFloat(pitch));
+                out.yaw = degToRad(parseFloat(yaw));
             }
         }
 
         return out;
     } catch(e) {
+        console.error(e);
         const err = new Error('Could not determine asset from URL');
-        throw e;
+        throw err;
     }
 };
 
 
 const updateUrl = (newLocationObj) => {
     const prevLocationObj = parseUrl();
-    const keys = ['webType', 'orgId', 'assetId', 'x', 'y', 'z', 'pitch', 'yaw', 'roll'];
+    const keys = ['webType', 'orgId', 'assetId', 'x', 'y', 'z', 'pitch', 'yaw'];
     let isChanged = false;
-
-    // console.log(1111, newLocationObj)
 
     newLocationObj = Object.assign({}, prevLocationObj, newLocationObj);
 
@@ -83,8 +84,6 @@ const updateUrl = (newLocationObj) => {
         }
     }
 
-    // console.log('updateUrl?', isChanged, {prevLocationObj, newLocationObj})
-
     if(!isChanged) {
         return;
     }
@@ -93,8 +92,10 @@ const updateUrl = (newLocationObj) => {
         webType,
         orgId, assetId,
         x, y, z,
-        pitch, yaw, roll,
+        pitch, yaw,
     } = newLocationObj;
+
+    const qs = new URLSearchParams(document.location.search);
 
     const newUrlPieces = [];
     newUrlPieces.push(`/${webType}`);
@@ -103,12 +104,12 @@ const updateUrl = (newLocationObj) => {
     if(x !== undefined && y !== undefined && z !== undefined){
         newUrlPieces.push(`@${x},${y},${z}`);
 
-        if(pitch !== undefined && yaw !== undefined && roll !== undefined) {
-            newUrlPieces.push(`,${pitch},${yaw},${roll}`);
+        if(pitch !== undefined && yaw !== undefined) {
+            newUrlPieces.push(`,${pitch},${yaw}`);
         }
     }
 
-    const newUrl = newUrlPieces.join('');
+    const newUrl = newUrlPieces.join('') + (!qs.keys().next().done ? '?' + qs : '');
     history.pushState(newLocationObj, '', newUrl);
 };
 
@@ -127,10 +128,18 @@ const randomInt = (min, max)=>{
     return Math.floor(Math.random() * (max - min)) + min;
 }
 
+const pitchYawToVector = (pitch, yaw) => {
+    const x = -Math.cos(pitch) * Math.sin(yaw);
+    const y = Math.sin(pitch);
+    const z = -Math.cos(pitch) * Math.cos(yaw);
+    return new THREE.Vector3(x, y, z);
+};
+
 module.exports = {
     regextract,
     updateUrl,
     parseUrl,
     addError,
     randomInt,
+    pitchYawToVector,
 }

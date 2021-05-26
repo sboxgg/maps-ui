@@ -3,6 +3,7 @@ import {
     EventDispatcher,
     Vector3
 } from 'three';
+import {radToDeg, degToRad} from "three/src/math/MathUtils";
 
 import {addError} from './funcs';
 
@@ -12,8 +13,14 @@ const NoclipControls = function (camera, domElement) {
     this.isLocked = false;
 
     // pitch is 0 to Math.PI radians
-    this.minPolarAngle = 0; // radians
-    this.maxPolarAngle = Math.PI; // radians
+
+    const ONE_DEG_RAD = degToRad(5);
+
+    this.minPolarAngle = -1 * Math.PI;// + ONE_DEG_RAD; // radians
+    this.maxPolarAngle = Math.PI;// - ONE_DEG_RAD; // radians
+
+    this.pitch = 0;
+    this.yaw = 0;
 
     this.controlSpeedMultiplier = 0.2;
     this.shiftSpeedMultipier = 5;
@@ -32,11 +39,19 @@ const NoclipControls = function (camera, domElement) {
     const unlockEvent = {type: 'unlock'};
     const doneMovingEvent = {type: 'doneMoving'};
 
-    const euler = new Euler(0, 0, 0, 'YXZ');
 
+    const euler = new Euler(0, 0, 0, 'YXZ');
+    // euler.setFromQuaternion(camera.quaternion);
+
+    const PI2 = 2 * Math.PI;
     const PI_2 = Math.PI / 2;
 
     const vec = new Vector3();
+
+    this.setPitchYaw = (pitch, yaw)=>{
+        this.pitch = pitch;
+        this.yaw = yaw;
+    }
 
     const onMouseMove = (event) => {
         // exit early if not in noclip mode
@@ -47,14 +62,22 @@ const NoclipControls = function (camera, domElement) {
         const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
         const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
 
-        euler.setFromQuaternion(camera.quaternion);
+        // euler.setFromQuaternion(camera.quaternion);
 
-        euler.y -= movementX * 0.001;
-        euler.x -= movementY * 0.001;
+        this.yaw -= movementX * 0.001;
+        this.pitch -= movementY * 0.001;
 
-        euler.x = Math.max(PI_2 - this.maxPolarAngle, Math.min(PI_2 - this.minPolarAngle, euler.x));
+        this.pitch = Math.min(PI_2, Math.max(-1 * PI_2, this.pitch));
 
-        camera.quaternion.setFromEuler(euler);
+        if(this.yaw > PI2) {
+            this.yaw -= PI2;
+        }
+        if(this.yaw < 0) {
+            this.yaw += PI2;
+        }
+        euler.x = this.pitch;
+        euler.y = this.yaw;
+        camera.setRotationFromEuler(euler);
 
         this.dispatchEvent(changeEvent);
     }
@@ -197,12 +220,12 @@ const NoclipControls = function (camera, domElement) {
         return camera;
     };
 
-    this.getDirection = function () {
-        const direction = new Vector3(0, 0, -1);
-        return (v) => {
-            return v.copy(direction).applyQuaternion(camera.quaternion);
-        };
-    }();
+    // this.getDirection = function () {
+    //     const direction = new Vector3(0, 0, -1);
+    //     return (v) => {
+    //         return v.copy(direction).applyQuaternion(camera.quaternion);
+    //     };
+    // }();
 
     this.moveForward = (distance) => {
         vec.setFromMatrixColumn(camera.projectionMatrix, 0);
