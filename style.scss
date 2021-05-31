@@ -53,11 +53,15 @@ body {
 }
 
 #radar {
-    //width: 200px;
-    //height: 200px;
+
+    $radar-offset: 32px;
+    $radar-size: 200px;
+
+    width: $radar-size;
+    height: $radar-size;
     position: absolute;
-    bottom: 2rem;
-    right: 2rem;
+    bottom: $radar-offset;
+    right: $radar-offset;
     outline: 4px solid #333;
 }
 

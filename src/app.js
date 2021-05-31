@@ -22,42 +22,58 @@ const cameras = {
 const qs = new URLSearchParams(document.location.search);
 const isDebug = !!parseInt(qs.get('debug') ?? '');
 
-let cameraPerspective, cameraRadar, scene, rendererPerspective, rendererRadar;
+let scene, renderer;
 let $radarCursor;
 let controls;
 
 const RADAR_SIZE = 200;
 const RADAR_Y_OFFSET = 40;
+const RADAR_GUI_CORNER_OFFSET = 32;
 
 const hammer2meters = unit => unit / 39.37;
 
 window.radToDeg = radToDeg;
 window.degToRad = degToRad;
 
-const onWindowResize = () => {
-    cameraPerspective.aspect = window.innerWidth / window.innerHeight;
-    cameraPerspective.updateProjectionMatrix();
-    rendererPerspective.setSize(window.innerWidth, window.innerHeight);
+let windowWidth = window.innerWidth;
+let windowHeight = window.innerHeight;
 
-    cameraRadar.aspect = 1;
-    cameraPerspective.updateProjectionMatrix();
-    rendererRadar.setSize(RADAR_SIZE, RADAR_SIZE);
+const onWindowResize = () => {
+    cameras.perspective.aspect = window.innerWidth / window.innerHeight;
+    cameras.perspective.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    cameras.radar.aspect = 1;
+    cameras.perspective.updateProjectionMatrix();
+
+    windowWidth = window.innerWidth;
+    windowHeight = window.innerHeight;
 
     render();
 };
 
 const render = () => {
-    rendererPerspective.render(scene, cameraPerspective);
-    updateRadar();
-    // cameraRadar.rotation.z += 0.01;
-    rendererRadar.render(scene, cameraRadar);
+    // render perspective
+    renderer.setViewport(0, 0, window.innerWidth, window.innerHeight)
+    renderer.setScissor(0, 0, window.innerWidth, window.innerHeight)
+    renderer.render(scene, cameras.perspective);
+
+    // render radar
+    const radarLeft = windowWidth - RADAR_SIZE - RADAR_GUI_CORNER_OFFSET;
+    const radarBottom = RADAR_GUI_CORNER_OFFSET;
+    renderer.setViewport(radarLeft, radarBottom, RADAR_SIZE, RADAR_SIZE)
+    renderer.setScissor(radarLeft, radarBottom, RADAR_SIZE, RADAR_SIZE)
+    renderer.setScissorTest(true);
+    renderer.render(scene, cameras.radar);
+    updateRadarCursor();
+    // cameras.radar.rotation.z += 0.01;
 };
 
 const $debug = document.querySelector('#debug');
 
-const updateRadar = () => {
+const updateRadarCursor = () => {
     // grab x,y and rotation from perspective camera
-    const { x, y, z } = cameraPerspective.position;
+    const { x, y, z } = cameras.perspective.position;
 
     const {
         pitch,
@@ -65,15 +81,15 @@ const updateRadar = () => {
     } = controls;
 
     // 270deg so the faces at the top are facing the camera
-    cameraRadar.rotation.x = degToRad(270);
+    cameras.radar.rotation.x = degToRad(270);
 
-    cameraRadar.position.x = x;
-    cameraRadar.position.y = y + RADAR_Y_OFFSET;
-    cameraRadar.position.z = z; // i got some weird rotations I think. shouldn't this be y?
+    cameras.radar.position.x = x;
+    cameras.radar.position.y = y + RADAR_Y_OFFSET;
+    cameras.radar.position.z = z; // i got some weird rotations I think. shouldn't this be y?
 
     // * -1 since the map is upsidedown
     $radarCursor.style.transform = `rotateZ(${-1 * yaw}rad)`;
-    cameraRadar.updateProjectionMatrix();
+    cameras.radar.updateProjectionMatrix();
 
     if(isDebug) {
         $debug.innerText = `
@@ -116,19 +132,19 @@ const initNoclip = (locationData) => {
 
     const baseUrl = `${Conf.mediaHost}/${orgId}/${assetId}/`;
 
-    cameraPerspective = new THREE.PerspectiveCamera(
+    cameras.perspective = new THREE.PerspectiveCamera(
         45,
         window.innerWidth / window.innerHeight,
         0.25,
         20000
     );
-    cameraRadar = new THREE.OrthographicCamera(
-        -1 * RADAR_SIZE,
-        RADAR_SIZE,
-        RADAR_SIZE,
-        -1 * RADAR_SIZE,
+    cameras.radar = new THREE.OrthographicCamera(
+        -1 * RADAR_SIZE / 2,
+        RADAR_SIZE / 2,
+        RADAR_SIZE / 2,
+        -1 * RADAR_SIZE / 2,
         0.1,
-        20000
+        2000
     );
 
     const setCameraPos = (x, y, z) => {
@@ -136,10 +152,10 @@ const initNoclip = (locationData) => {
         if (x === undefined || y === undefined || z === undefined) {
             return;
         }
-        cameraPerspective.position.set(x, y, z);
+        cameras.perspective.position.set(x, y, z);
         // console.log('set camera perspective pos', {x,y,z})
-        cameraRadar.position.set(x, y + RADAR_Y_OFFSET, z);
-        cameraRadar.updateProjectionMatrix();
+        cameras.radar.position.set(x, y + RADAR_Y_OFFSET, z);
+        cameras.radar.updateProjectionMatrix();
     };
     const setCameraAngle = (pitch, yaw) => {
         if (pitch === undefined || yaw === undefined) {
@@ -148,22 +164,21 @@ const initNoclip = (locationData) => {
 
         // rotate to face supplied pitch/yaw
         var vec = pitchYawToVector(pitch, yaw);
-        vec.add(cameraPerspective.position);
-        cameraPerspective.lookAt(vec);
-        cameraPerspective.updateProjectionMatrix();
+        vec.add(cameras.perspective.position);
+        cameras.perspective.lookAt(vec);
+        cameras.perspective.updateProjectionMatrix();
         render();
     };
 
     setCameraPos(0, 0, 0);
     // setCameraPos( hammer2meters(x), hammer2meters(y), hammer2meters(z) );
 
-    window.cameraPerspective = cameraPerspective;
-    window.cameraRadar = cameraRadar;
+    window.cameras = cameras;
 
     scene = new THREE.Scene();
 
-    scene.add(cameraPerspective);
-    scene.add(cameraRadar);
+    scene.add(cameras.perspective);
+    scene.add(cameras.radar);
 
     new RGBELoader()
         .setDataType(THREE.UnsignedByteType)
@@ -176,19 +191,18 @@ const initNoclip = (locationData) => {
             scene.environment = envMap;
             scene.background = new THREE.Color(0xa0a0a0);
 
+            // var light = new THREE.AmbientLight(0xffffff, 100000);
+            // scene.add(light);
 
-            var light = new THREE.AmbientLight(0xffffff, 100000);
-            scene.add(light);
-
-            const light2 = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
-            scene.add(light2);
+            // const light2 = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
+            // scene.add(light2);
 
             texture.dispose();
             pmremGenerator.dispose();
 
             render();
 
-            const roughnessMipmapper = new RoughnessMipmapper(rendererPerspective);
+            const roughnessMipmapper = new RoughnessMipmapper(renderer);
 
             const loader = new GLTFLoader().setPath(baseUrl);
 
@@ -247,33 +261,25 @@ const initNoclip = (locationData) => {
                 })
         });
 
-    rendererPerspective = new THREE.WebGLRenderer({antialias: true});
-    rendererPerspective.setPixelRatio(window.devicePixelRatio);
-    rendererPerspective.setSize(window.innerWidth, window.innerHeight);
-    rendererPerspective.toneMapping = THREE.ACESFilmicToneMapping;
-    rendererPerspective.toneMappingExposure = 1;
-    rendererPerspective.outputEncoding = THREE.sRGBEncoding;
-    // rendererPerspective.autoUpdate = true;
-    container.appendChild(rendererPerspective.domElement);
+    renderer = new THREE.WebGLRenderer({antialias: true});
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.autoClear = THREE.sRGBEncoding;
+    // renderer.autoUpdate = true;
+    container.appendChild(renderer.domElement);
 
-
-    rendererRadar = new THREE.WebGLRenderer({antialias: true});
-    rendererRadar.setPixelRatio(window.devicePixelRatio);
-    rendererRadar.setSize(RADAR_SIZE, RADAR_SIZE);
-    rendererRadar.toneMapping = THREE.ACESFilmicToneMapping;
-    rendererRadar.toneMappingExposure = 1;
-    rendererRadar.outputEncoding = THREE.sRGBEncoding;
-    // rendererRadar.autoUpdate = true;
-    containerRadar.appendChild(rendererRadar.domElement);
     containerRadar.appendChild($radarCursor);
 
-    const pmremGenerator = new THREE.PMREMGenerator(rendererPerspective);
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
     pmremGenerator.compileEquirectangularShader();
 
-    controls = new NoclipControls(cameraPerspective, rendererPerspective.domElement);
+    controls = new NoclipControls(cameras.perspective, renderer.domElement);
     controls.setPitchYaw(pitch, yaw);
 
-    // const controls = new OrbitControls( cameraPerspective, rendererPerspective.domElement );
+    // const controls = new OrbitControls( cameras.perspective, renderer.domElement );
     controls.addEventListener('change', render); // use if there is no animation loop
     controls.addEventListener('doneMoving', onControlsDoneMoving); // use if there is no animation loop
     // controls.minDistance = 2;
@@ -298,7 +304,7 @@ const initNoclip = (locationData) => {
     }
 
     function onControlsDoneMoving() {
-        let {x, y, z} = cameraPerspective.position;
+        let {x, y, z} = cameras.perspective.position;
         let {
             pitch,
             yaw

@@ -28,9 +28,10 @@ const NoclipControls = function (camera, domElement) {
     this.inMotion = {
         forward: 0,
         right: 0,
+        isFastHeld: false,
+        isSlowHeld: false,
     };
-    this.isFastHeld = false;
-    this.isSlowHeld = false;
+    this.holdingAnnotate = false;
 
     const $helpNoclip = document.body.querySelector('.help-noclip');
 
@@ -118,10 +119,10 @@ const NoclipControls = function (camera, domElement) {
                     break;
                 case 'ShiftLeft':
                 case 'ShiftRight':
-                    this.isFastHeld = true;
+                    this.inMotion.isFastHeld = true;
                     break;
                 case 'Space':
-                    this.isSlowHeld = true;
+                    this.inMotion.isSlowHeld = true;
                     break;
             }
         } else {
@@ -142,22 +143,25 @@ const NoclipControls = function (camera, domElement) {
                 break;
             case 'ShiftLeft':
             case 'ShiftRight':
-                this.isFastHeld = false;
+                this.inMotion.isFastHeld = false;
                 break;
             case 'Space':
-                this.isSlowHeld = false;
+                this.inMotion.isSlowHeld = false;
+                break;
+            case 'KeyE':
+                this.holdingAnnotate = true;
                 break;
         }
         // if no keys pressed anymore, trigger url update
-        if (!this.inMotion.forward && !this.inMotion.right && !this.isFastHeld && !this.isSlowHeld) {
+        if (!this.inMotion.forward && !this.inMotion.right && !this.inMotion.isFastHeld && !this.inMotion.isSlowHeld) {
             this.dispatchEvent(doneMovingEvent);
         }
     }
 
     this.update = (dt) => {
         const speedMultiplier = (
-            this.isSlowHeld ? this.controlSpeedMultiplier : (
-                this.isFastHeld ? this.shiftSpeedMultipier : 1
+            this.inMotion.isSlowHeld ? this.controlSpeedMultiplier : (
+                this.inMotion.isFastHeld ? this.shiftSpeedMultipier : 1
             )
         ) * dt * 10;
         const moveForwardDist = this.inMotion.forward * speedMultiplier;
