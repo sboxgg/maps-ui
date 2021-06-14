@@ -6,7 +6,8 @@
   "scripts": {
     "build": "parcel build index.html --out-dir public/",
     "dev": "parcel index.html --public-url / --out-dir public/ --port 3000",
-    "serve": "parcel serve --out-dir public/ --port 3000 index.html"
+    "serve": "parcel serve --out-dir public/ --port 3000 index.html",
+    "local-api": "node setup-local-api.js"
   },
   "repository": {
     "type": "git",
@@ -20,6 +21,8 @@
   "homepage": "https://github.com/sboxgg/maps-ui#readme",
   "dependencies": {
     "dat.gui": "^0.7.7",
+    "express": "^4.17.1",
+    "glob-promise": "^4.2.0",
     "glsl-blend-soft-light": "^1.0.5",
     "glsl-film-grain": "^1.0.4",
     "gltf-validator": "^2.0.0-dev.3.3",
